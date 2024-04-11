@@ -14,6 +14,7 @@
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <errno.h>
 #include <malloc.h>
 
@@ -511,10 +512,6 @@ private:
 	}
 
 	BOOL _rwProcMemDriver_InitDeviceInfo(int nDriverLink, const std::string & machineId) {
-		if (machineId.empty()) {
-			return FALSE;
-		}
-
 		struct init_device_info {
 			char machine[32];
 			char reserved[256];
@@ -524,9 +521,11 @@ private:
 		} oDevInfo;
 		memset(&oDevInfo, 0, sizeof(oDevInfo));
 
-		strncpy(oDevInfo.machine, machineId.c_str(), machineId.length());
-		oDevInfo.machine[sizeof(oDevInfo.machine) - 1] = '\0';
-
+		if (!machineId.empty()) {
+			strncpy(oDevInfo.machine, machineId.c_str(), machineId.length());
+			oDevInfo.machine[sizeof(oDevInfo.machine) - 1] = '\0';
+		}
+		
 		std::string strProcSelfStatus = _GetFileContent("/proc/self/status");
 		strncpy(oDevInfo.proc_self_status, strProcSelfStatus.c_str(), strProcSelfStatus.length());
 		oDevInfo.proc_self_status[sizeof(oDevInfo.proc_self_status) - 1] = '\0';
@@ -541,11 +540,6 @@ private:
 		TRACE("InitDeviceInfo proc_self_maps_cnt:%d\n", oDevInfo.proc_self_maps_cnt);
 
 		int ret = _rwProcMemDriver_MyIoctl(nDriverLink, IOCTL_INIT_DEVICE_INFO, (unsigned long)&oDevInfo, sizeof(oDevInfo));
-		return ret == 0 ? TRUE : FALSE;
-	}
-
-	BOOL _rwProcMemDriver_SetKey(int nDriverLink, char* key64) {
-		int ret = _rwProcMemDriver_MyIoctl(nDriverLink, IOCTL_KEY, (unsigned long)key64, 64);
 		return ret == 0 ? TRUE : FALSE;
 	}
 
